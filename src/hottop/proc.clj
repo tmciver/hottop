@@ -1,4 +1,5 @@
-(ns hottop.proc)
+(ns hottop.proc
+  (:require [clojure.string :as str]))
 
 ;; The functions contained in this namespace are processors and are intended to
 ;; process the request in step.  Each processor function takes four arguments:
@@ -43,3 +44,21 @@ argument and considers the user authorized if that function returns true. This
       [resource request response handlers]
       [resource request {:status 401
                          :body "Unauthorized"} handlers])))
+
+(defn ^{:webmachine-node :b3} process-options
+  "If the request method is OPTIONS, creates a response whose :status is 200 and
+  whose \"Accept\" header is a string of comma-separated, upper-case HTTP
+  methods supported by this resource."
+  [resource request response handlers]
+  (if (= (:request-method request) :options)
+    (let [methods-str (->> resource
+                           :methods
+                           keys
+                           (cons :options)
+                           (map name)
+                           (map str/upper-case)
+                           (interpose ", ")
+                           (apply str))
+          response (assoc-in response [:headers "Allow"] methods-str)]
+      [resource request response handlers])
+    [resource request response handlers]))

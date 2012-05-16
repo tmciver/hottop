@@ -1,9 +1,26 @@
 (ns hottop.test.proc
-  (:use [hottop.proc]
-        [hottop.resource]
-        [clojure.test]))
+  (:use hottop.proc
+        hottop.resource
+        clojure.test
+        ring.mock.request)
+  (:require [clojure.string :as str]))
 
 (deftest test-http-processors
+
+  (testing "Test for OPTION handling"
+    (let [request (request :options "/test")
+          resource (-> base-resource
+                       (assoc-in [:methods :get] (constantly "Hello!"))
+                       (assoc-in [:methods :post] (constantly "Hello!"))
+                       (assoc-in [:methods :put] (constantly "Hello!")))
+          [_ _ response _] (process-options resource request {} {})
+          option-strs (-> response
+                          :headers
+                          (get "Allow")
+                          (str/split #",")
+                          (#(map str/trim %))
+                          set)]
+      (is (= option-strs #{"GET" "PUT" "POST" "OPTIONS"}))))
 
   (testing "Test for method implemented"
     (let [request1 {:request-method :get}
