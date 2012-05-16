@@ -59,6 +59,7 @@ argument and considers the user authorized if that function returns true. This
                            (map str/upper-case)
                            (interpose ", ")
                            (apply str))
-          response (assoc-in response [:headers "Allow"] methods-str)]
+          response {:status 200
+                    :headers {"Allow" methods-str}}]
       [resource request response handlers])
     [resource request response handlers]))
