@@ -40,4 +40,8 @@
                              (assoc base-resource :auth (constantly false))
                              request {} {})]
       (is (nil? (:status response1)))
-      (is (= 401 (:status response2))))))
+      (is (= 401 (:status response2)))))
+
+#_  (testing "Test Acceptable Media Types"
+    (let [request (-> (request :get "/test")
+                      (header "Accept" ))])))
