@@ -1,5 +1,7 @@
 (ns hottop.proc
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.set :as set]
+            [hottop.util :as util]))
 
 ;; The functions contained in this namespace are processors and are intended to
 ;; process the request in step.  Each processor function takes four arguments:
@@ -67,6 +69,24 @@ argument and considers the user authorized if that function returns true. This
 (defn ^{:webmachine-node :c4} process-acceptable-media-types
   "Determine the optimal media type to send to the client given the Accept
   request header and the media types available. If no acceptable media type is
-  available, returns a response map with a 406 status (Not Acceptable)."
+  available, returns a response map with a 406 status (Not Acceptable). If there
+  is an acceptable media type availabe, key :transform-fn is added the handlers
+  map whose value is the function associated with that media type from the
+  resource.
+
+  WARNING! This function is broken. Specifically, */* and type/* media types in
+  the Accept header are not handled."
   [resource request response handlers]
-  )
+  (let [ct-provided (set (keys (:content-types-provided resource)))
+        accept-maps (util/parse-accept-header (get-in request [:headers "accept"]))
+        accept-maps (filter #(not (= 0 (:q %))) accept-maps)
+        ct-accepted (set (map :type accept-maps))
+        intersection (set/intersection ct-provided ct-accepted)
+        type (->> (filter #(intersection (:type %)) accept-maps)
+                  (sort-by :q >)
+                  first
+                  :type)]
+    (if type
+      [resource request response (assoc handlers :transform-fn (get-in resource [:content-types-provided type]))]
+      [resource request {:status 406
+                         :body "Not Acceptable"} handlers])))
