@@ -24,17 +24,18 @@
                (= 200 (:status response))))))
 
   (testing "Test for method implemented"
-    (let [request1 {:request-method :get}
-          request2 {:request-method :post}
-          resource (update-in base-resource [:methods :get]
+    (let [request1 (request :get "/test")
+          request2 (request :post "/test")
+          resource (assoc-in base-resource [:methods :get]
                               (fn [request] "Hello!"))
-          [_ _ response1 _] (validate-method resource request1 {} {})
+          [_ _ response1 handlers] (validate-method resource request1 {} {})
           [_ _ response2 _] (validate-method resource request2 {} {})]
-      (is (nil? (:status response1)))
+      (is (and (nil? (:status response1))
+               (not (nil? (:method-handler handlers)))))
       (is (= 405 (:status response2)))))
 
   (testing "Test Authorization"
-    (let [request {:request-method :get}
+    (let [request (request :get "/test")
           [_ _ response1 _] (validate-authorization base-resource request {} {})
           [_ _ response2 _] (validate-authorization
                              (assoc base-resource :auth (constantly false))
@@ -51,5 +52,5 @@
           [_ _ response1 handlers] (process-acceptable-media-types resource request1 {} {})
           [_ _ response2 _] (process-acceptable-media-types resource request2 {} {})]
       (is (and (nil? (:status response1))
-               (not (nil? (:transform-fn handlers)))))
+               (not (nil? (:transform-handler handlers)))))
       (is (= 406 (:status response2))))))

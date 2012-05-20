@@ -87,6 +87,7 @@ argument and considers the user authorized if that function returns true. This
                   first
                   :type)]
     (if type
-      [resource request response (assoc handlers :transform-fn (get-in resource [:content-types-provided type]))]
+      (let [handlers (assoc handlers :transform-handler (get-in resource [:content-types-provided type]))]
+        [resource request response handlers])
       [resource request {:status 406
                          :body "Not Acceptable"} handlers])))
