@@ -24,8 +24,10 @@
 ;; http://wiki.basho.com/images/http-headers-status-v3.png)
 
 (defn ^{:webmachine-node :b10} validate-method
-  "Checks whether the request method is implemented by the given
-resource. Returns nil if it is, or a response map with a status code 405."
+  "Checks whether the request method is implemented by the given resource. If it
+is, assoc's key :method-handler in handlers map whose value is the function
+associated with that method. If the method is not supported by the resource, a
+response with status code 405 is returned."
   [resource request response handlers]
   (let [request-method (:request-method request)
         available-methods (set (keys (:methods resource)))]
@@ -70,9 +72,9 @@ argument and considers the user authorized if that function returns true. This
   "Determine the optimal media type to send to the client given the Accept
   request header and the media types available. If no acceptable media type is
   available, returns a response map with a 406 status (Not Acceptable). If there
-  is an acceptable media type availabe, key :transform-fn is added the handlers
-  map whose value is the function associated with that media type from the
-  resource.
+  is an acceptable media type availabe, key :transform-handler is added the
+  handlers map whose value is the function associated with that media type from
+  the resource.
 
   WARNING! This function is broken. Specifically, */* and type/* media types in
   the Accept header are not handled."
@@ -91,3 +93,16 @@ argument and considers the user authorized if that function returns true. This
         [resource request response handlers])
       [resource request {:status 406
                          :body "Not Acceptable"} handlers])))
+
+(defn process-request
+  "Calls the function associated with the request method with the Ring request
+  map as argument. Passes the result of that to the function associated with the
+  content type from the :content-types-provided map."
+  [resource request response handlers]
+  (let [method-fn (:method-handler handlers)
+        transform-fn (:transform-handler handlers)
+        method-result (method-fn request)
+        formatted (transform-fn method-result)
+        response {:status 200
+                  :body formatted}]
+    [resource request response handlers]))
