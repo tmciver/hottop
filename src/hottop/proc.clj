@@ -55,14 +55,7 @@ argument and considers the user authorized if that function returns true. This
   methods supported by this resource."
   [resource request response handlers]
   (if (= (:request-method request) :options)
-    (let [methods-str (->> resource
-                           :methods
-                           keys
-                           (cons :options)
-                           (map name)
-                           (map str/upper-case)
-                           (interpose ", ")
-                           (apply str))
+    (let [methods-str (util/allow-header-str resource)
           response {:status 200
                     :headers {"Allow" methods-str}}]
       [resource request response handlers])

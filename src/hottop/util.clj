@@ -30,3 +30,17 @@
          (map (fn [{:keys [q] :or {q "1.0"} :as m}]
                 (let [q (Double/parseDouble q)]
                   (assoc m :q q)))))))
+
+(defn allow-header-str
+  "Returns a string of a comma-separated list (with spaces) of the methods
+  (upper-cased) supported by the given resource. This string is intended to be
+  used with the \"Allow\" header in an HTTP response."
+  [resource]
+  (->> resource
+       :methods
+       keys
+       (cons :options)
+       (map name)
+       (map str/upper-case)
+       (interpose ", ")
+       (apply str)))

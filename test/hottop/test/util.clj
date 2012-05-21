@@ -1,6 +1,7 @@
 (ns hottop.test.util
   (:use clojure.test
-        hottop.util))
+        hottop.util
+        hottop.resource))
 
 (deftest test-parse-accept-header
   (testing "Test Accept headers"
@@ -15,3 +16,11 @@
            [{:q 1.0, :type "gzip"}
             {:q 0.5, :type "identity"}
             {:q 0.0, :type "*"}]))))
+
+(deftest test-allow-header-str
+  (let [resource (-> base-resource
+                     (assoc-in [:methods :get] (constantly "Hello!"))
+                     (assoc-in [:methods :post] (constantly "Hello!"))
+                     (assoc-in [:methods :put] (constantly "Hello!")))]
+    (is (= (allow-header-str resource)
+           "OPTIONS, PUT, POST, GET"))))
