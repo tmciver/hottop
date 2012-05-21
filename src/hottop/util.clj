@@ -39,7 +39,6 @@
   (->> resource
        :methods
        keys
-       (cons :options)
        (map name)
        (map str/upper-case)
        (interpose ", ")

@@ -20,7 +20,7 @@
                           (str/split #",")
                           (#(map str/trim %))
                           set)]
-      (is (and (= option-strs #{"GET" "PUT" "POST" "OPTIONS"})
+      (is (and (= option-strs #{"GET" "PUT" "POST"})
                (= 200 (:status response))))))
 
   (testing "Test for method implemented"

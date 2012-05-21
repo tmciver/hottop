@@ -23,4 +23,4 @@
                      (assoc-in [:methods :post] (constantly "Hello!"))
                      (assoc-in [:methods :put] (constantly "Hello!")))]
     (is (= (allow-header-str resource)
-           "OPTIONS, PUT, POST, GET"))))
+           "PUT, POST, GET"))))
