@@ -32,7 +32,8 @@
           [_ _ response2 _] (validate-method resource request2 {} {})]
       (is (and (nil? (:status response1))
                (not (nil? (:method-handler handlers)))))
-      (is (= 405 (:status response2)))))
+      (is (and (= 405 (:status response2))
+               (not (nil? (get-in response2 [:headers "allow"])))))))
 
   (testing "Test Authorization"
     (let [request (request :get "/test")

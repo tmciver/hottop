@@ -34,8 +34,10 @@ response with status code 405 is returned."
     (if (available-methods request-method)
       (let [handlers (assoc handlers :method-handler (get-in resource [:methods request-method]))]
         [resource request response handlers])
-      [resource request {:status 405
-                         :body "Method Not Allowed"} handlers])))
+      (let [response {:status 405
+                      :headers {"allow" (util/allow-header-str resource)}
+                      :body "Method Not Allowed"}]
+        [resource request response handlers]))))
 
 (defn ^{:webmachine-node :b8} validate-authorization
   "Calls the function associated with resource key :auth with request as
