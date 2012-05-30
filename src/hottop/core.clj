@@ -1,5 +1,6 @@
 (ns hottop.core
-  (:use hottop.proc))
+  (:use hottop.proc)
+  (:require [clout.core :as clout]))
 
 (def ^:private processors [process-options
                            validate-method
@@ -22,3 +23,16 @@
           response))
       {:status 500
        :body "Internal Server Error"})))
+
+(defn handler
+  "Main application handler. Takes a collection of resource maps as
+argument. Returns a function to be passed as a handler to the run-jetty
+function."
+  [resources]
+  (fn [request]
+    (if-let [resource (doto (->> resources
+                           (map #(clout/route-matches (:uri %) request))
+                           first) (#(println (:uri %))))]
+      (run-processors resource request)
+      {:status 404
+       :body "Resource Not Found"})))
