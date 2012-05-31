@@ -39,7 +39,8 @@
 (defn create-readonly-html-resource
   "Return a resource that will only respond to a GET request. The given function
   should return the content for the resource as html."
-  [f]
+  [uri f]
   (-> base-resource
       (assoc-in [:methods :get] f)
-      (assoc-in [:content-types-provided "text/html"] identity)))
+      (assoc-in [:content-types-provided "text/html"] identity)
+      (assoc :uri uri)))

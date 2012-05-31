@@ -49,7 +49,7 @@
                        (header "Accept" "text/html"))
           request2 (-> (request :get "/test")
                        (header "Accept" "text/csv"))
-          resource (create-readonly-html-resource (constantly "hello!"))
+          resource (create-readonly-html-resource "/test" (constantly "hello!"))
           [_ _ response1 handlers] (process-acceptable-media-types resource request1 {} {})
           [_ _ response2 _] (process-acceptable-media-types resource request2 {} {})]
       (is (and (nil? (:status response1))
