@@ -26,8 +26,7 @@
   (testing "Test for method implemented"
     (let [request1 (request :get "/test")
           request2 (request :post "/test")
-          resource (assoc-in base-resource [:methods :get]
-                              (fn [request] "Hello!"))
+          resource (create-readonly-html-resource "/hello" (constantly "Hello!"))
           [_ _ response1 handlers] (validate-method resource request1 {} {})
           [_ _ response2 _] (validate-method resource request2 {} {})]
       (is (and (nil? (:status response1))

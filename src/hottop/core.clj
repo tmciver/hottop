@@ -30,9 +30,7 @@ argument. Returns a function to be passed as a handler to the run-jetty
 function."
   [resources]
   (fn [request]
-    (if-let [resource (doto (->> resources
-                           (map #(clout/route-matches (:uri %) request))
-                           first) (#(println (:uri %))))]
+    (if-let [resource (first (filter #(clout/route-matches (:uri %) request) resources))]
       (run-processors resource request)
       {:status 404
        :body "Resource Not Found"})))
