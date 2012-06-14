@@ -35,20 +35,12 @@ function."
       {:status 404
        :body "Resource Not Found"})))
 
-#_(defmacro app
-  [& forms]
-  {:pre (= (count forms) 2)}  ;; for now, we should only have a route and a resource map
-  (let [[route resource] forms]
-    `(fn [req]
-       (let [segment (first (.split (:uri req) "/"))]
-         (when (= route segment)
-           (run-processors resource req))))))
-
 (defmacro app
   [& forms]
   ;; for now, we should only have a route and a resource map
   (let [[[route] resource] forms]
-    (list 'fn ['req]
-          (list 'let ['segment (list 'second (list '.split (list :uri 'req) "/"))]
-                (list 'when (list '= route 'segment)
-                      (list 'hottop.core/run-processors resource 'req))))))
+    `(fn [req#]
+       (let [segment# (second (.split (:uri req#) "/"))]
+         (when (= ~route segment#)
+           (run-processors ~resource req#))))))
+
