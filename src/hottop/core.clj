@@ -24,17 +24,6 @@
       {:status 500
        :body "Internal Server Error"})))
 
-(defn handler
-  "Main application handler. Takes a collection of resource maps as
-argument. Returns a function to be passed as a handler to the run-jetty
-function."
-  [resources]
-  (fn [request]
-    (if-let [resource (first (filter #(clout/route-matches (:uri %) request) resources))]
-      (run-processors resource request)
-      {:status 404
-       :body "Resource Not Found"})))
-
 (defmacro app
   "Currently only supports one or more route-resource pairs."
   [& forms]
