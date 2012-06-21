@@ -36,11 +36,37 @@ function."
        :body "Resource Not Found"})))
 
 (defmacro app
+  "Currently only supports one or more route-resource pairs."
   [& forms]
-  ;; for now, we should only have a route and a resource map
-  (let [[[route] resource] forms]
+  (let [routes+resources (partition 2 forms)
+        routes+resources (map vec routes+resources)
+        routes+resources (vec routes+resources)
+        matcher '(fn [segment [[route] resource]]
+                  (when (= route segment)
+                    resource))]
     `(fn [req#]
-       (let [segment# (second (.split (:uri req#) "/"))]
-         (when (= ~route segment#)
-           (run-processors ~resource req#))))))
+       (let [segment# (second (.split (:uri req#) "/"))
+             [~'_ resource#] (first (filter (fn [[[route#] ~'_]]
+                                             (= route# segment#)) ~routes+resources))]
+         (if resource#
+           (run-processors resource# req#)
+           {:status 404
+            :body "Resource Not Found"})))))
 
+(comment
+  ;; for this version this . . .
+  (app ["hello"] hello-resource-map
+       ["goodbye"] goodbye-resource-map)
+
+  ;; should become something like . . .
+  (fn [request]
+    (let [segment (second (.split (:uri request) "/"))
+          [_ resource] (first (filter (fn [[[route] _]]
+                                         (= route segment))
+                                   [[["hello"] hello-resource-map]
+                                    [["goodbye"] goodbye-resource-map]]))]
+      (if resource
+        (run-processors resource request)
+        {:status 404
+         :body "Resource Not Found"})))
+  )
