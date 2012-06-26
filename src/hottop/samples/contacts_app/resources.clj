@@ -1,4 +1,4 @@
-(ns hottop.samples.resource.contacts
+(ns hottop.samples.contacts-app.resources
   (:require [hottop.resource :as res]
             [hiccup.core :as hiccup])
   (:refer-clojure :exclude [get]))
@@ -58,4 +58,4 @@
   [contacts]
   (html-template "Contacts" (contacts-to-table contacts)))
 
-(def resource (res/create-readonly-html-resource get contacts-to-html))
+(def contacts (res/create-readonly-html-resource get contacts-to-html))
