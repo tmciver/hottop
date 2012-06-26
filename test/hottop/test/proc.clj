@@ -26,7 +26,7 @@
   (testing "Test for method implemented"
     (let [request1 (request :get "/test")
           request2 (request :post "/test")
-          resource (create-readonly-html-resource (constantly "Hello!"))
+          resource (create-readonly-html-resource (constantly "Hello!") identity)
           [_ _ response1 handlers] (validate-method resource request1 {} {})
           [_ _ response2 _] (validate-method resource request2 {} {})]
       (is (and (nil? (:status response1))
@@ -48,7 +48,7 @@
                        (header "Accept" "text/html"))
           request2 (-> (request :get "/test")
                        (header "Accept" "text/csv"))
-          resource (create-readonly-html-resource (constantly "hello!"))
+          resource (create-readonly-html-resource (constantly "hello!") identity)
           [_ _ response1 handlers] (process-acceptable-media-types resource request1 {} {})
           [_ _ response2 _] (process-acceptable-media-types resource request2 {} {})]
       (is (and (nil? (:status response1))

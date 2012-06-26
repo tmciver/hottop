@@ -5,7 +5,7 @@
             [hottop.resource :as resource]))
 
 (deftest test-run-processors
-  (let [hello-resource (resource/create-readonly-html-resource (constantly "Hello!"))
+  (let [hello-resource (resource/create-readonly-html-resource (constantly "Hello!") identity)
         hello-get-request (-> (ring-mock/request :get "/hello")
                           (ring-mock/header "accept" "text/html"))
         hello-put-request (-> (ring-mock/request :put "/hello")
