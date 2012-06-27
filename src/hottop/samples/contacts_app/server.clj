@@ -2,10 +2,10 @@
   (:require [hottop.samples.contacts-app.resources :as resources]
             [hottop.core :as hottop]
             [hottop.resource :as resource]
-            [ring.adapter.jetty :as ring-jetty]
-            [ring.middleware.reload :as ring-reload]))
+            [ring.adapter.jetty :as ring-jetty]))
 
-(def my-app (hottop/app ["contacts"] resources/contacts))
+(def my-app (hottop/app ["contacts"] resources/contacts
+                        ["create-contact"] resources/create-contact))
 
 (defn -main
   [port]

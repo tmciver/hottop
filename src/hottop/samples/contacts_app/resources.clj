@@ -1,8 +1,10 @@
 (ns hottop.samples.contacts-app.resources
   (:require [hottop.resource :as res]
-            [hiccup.core :as hiccup])
+            [hiccup.core :as hiccup]
+            [hiccup.form :as form])
   (:refer-clojure :exclude [get]))
 
+;; our database
 (def ^:private db (ref {1 {:fname "Dorothy"
                            :lname "Gale"
                            :phone "867-5309"
@@ -16,14 +18,14 @@
                            :phone "555-5678"
                            :desc "If he only had a heart."}}))
 
-;; model
+;; contacts model
 
 (defn- get
   "Returns a seq of all the contacts in the database."
   [request]
   (vals @db))
 
-;; view
+;; contacts view
 
 (defn- html-template
   "HTML template to be used for all HTML pages."
@@ -58,4 +60,26 @@
   [contacts]
   (html-template "Contacts" (contacts-to-table contacts)))
 
+;; contacts resource
+
 (def contacts (res/create-readonly-html-resource get contacts-to-html))
+
+;; create-contact view
+
+(defn- create-contact-fn
+  [_]
+  (html-template "Create Contact"
+                 (hiccup/html [:h2 "Create a new contact"]
+                              (form/form-to [:post "/contacts"]
+                                            [:lable "First name: "]
+                                            (form/text-field "fname")
+                                            [:br]
+                                            [:lable "Last name: "]
+                                            (form/text-field "lname")
+                                            [:br]
+                                            [:lable "Phone number: "]
+                                            (form/text-field "number")))))
+
+;; create-contact resource
+
+(def create-contact (res/create-readonly-html-resource create-contact-fn identity))
