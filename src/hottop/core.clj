@@ -29,10 +29,7 @@
   [& forms]
   (let [routes+resources (partition 2 forms)
         routes+resources (map vec routes+resources)
-        routes+resources (vec routes+resources)
-        matcher '(fn [segment [[route] resource]]
-                  (when (= route segment)
-                    resource))]
+        routes+resources (vec routes+resources)]
     `(fn [req#]
        (let [segment# (second (.split (:uri req#) "/"))
              [~'_ resource#] (first (filter (fn [[[route#] ~'_]]
