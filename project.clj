@@ -1,4 +1,4 @@
-(defproject hottop/hottop "1.0.0-SNAPSHOT" 
+(defproject hottop/hottop "0.1.0" 
   :min-lein-version "2.0.0"
   :profiles {:dev
              {:dependencies
