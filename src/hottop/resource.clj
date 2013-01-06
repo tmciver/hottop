@@ -36,10 +36,11 @@
 (defn create-readonly-html-resource
   "Returns a resource that will only respond to a GET request. get-fn should be
 a function of the ring request. html-fn should be a function of one argument (it
-is passed the result of get-fn) and should return well-formed HTML. If you want
-to use a single function that takes the ring request and returns HTML directly,
-then pass that function as get-fn and use identity for html-fn."
-  [get-fn html-fn]
-  (-> base-resource
-      (assoc-in [:methods :get] get-fn)
-      (assoc-in [:content-types-provided "text/html"] html-fn)))
+is passed the result of get-fn) and should return well-formed HTML. You can also
+pass in a single function that takes the ring request and returns HTML directly."
+  ([get-fn html-fn]
+     (-> base-resource
+         (assoc-in [:methods :get] get-fn)
+         (assoc-in [:content-types-provided "text/html"] html-fn)))
+  ([get-html-fn]
+     (create-readonly-html-resource get-html-fn identity)))
