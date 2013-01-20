@@ -1,5 +1,6 @@
 (ns hottop.test.util
   (:use clojure.test
+        ring.mock.request
         hottop.util
         hottop.resource))
 
@@ -24,3 +25,15 @@
                      (assoc-in [:methods :put] (constantly "Hello!")))]
     (is (= (allow-header-str resource)
            "PUT, POST, GET"))))
+
+(deftest test-optimal-media-type
+  (testing "Test Acceptable Media Types"
+    (let [request1 (-> (request :get "/test")
+                       (header "Accept" "text/html"))
+          request2 (-> (request :get "/test")
+                       (header "Accept" "text/csv"))
+          resource (create-readonly-html-resource (constantly "hello!"))
+          omt1 (optimal-media-type request1 resource)
+          omt2 (optimal-media-type request2 resource)]
+      (is (= omt1 "text/html"))
+      (is (nil? omt2)))))
