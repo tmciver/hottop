@@ -1,5 +1,6 @@
 (ns hottop.util
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.set :as set]))
 
 (defn- split-and-trim
   "Splits the input string on the given regular expression and trims the
@@ -43,3 +44,22 @@
        (map str/upper-case)
        (interpose ", ")
        (apply str)))
+
+(defn ^{:webmachine-node :c4} optimal-media-type
+  "Returns a string representing the optimal client-requested media type or nil
+if there isn't one.  See RFC 2046 (http://tools.ietf.org/html/rfc2046) or
+http://en.wikipedia.org/wiki/MIME_type for examples of media type strings.
+
+  WARNING! This function is broken. Specifically, */* and type/* media types in
+  the Accept header are not handled."
+  [request resource]
+  (let [ct-provided (set (keys (:content-types-provided resource)))
+        accept-maps (parse-accept-header (get-in request [:headers "accept"]))
+        accept-maps (filter #(not (= 0 (:q %))) accept-maps)
+        ct-accepted (set (map :type accept-maps))
+        intersection (set/intersection ct-provided ct-accepted)
+        type (->> (filter #(intersection (:type %)) accept-maps)
+                  (sort-by :q >)
+                  first
+                  :type)]
+    type))

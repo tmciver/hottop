@@ -2,27 +2,10 @@
   (:use hottop.proc)
   (:require [clout.core :as clout]))
 
-(def ^:private processors [process-options
-                           validate-method
-                           validate-authorization
-                           process-acceptable-media-types
-                           process-request])
-
-(defn run-processors
-  "Runs the processors on the given resource and request to produce a response."
-  [resource request]
-  (loop [processors processors
-         resource resource
-         request request
-         response {}
-         handlers {}]
-    (if-let [processor (first processors)]
-      (let [[resource request response handlers] (processor resource request response handlers)]
-        (if (nil? (:status response))
-          (recur (rest processors) resource request response handlers)
-          response))
-      {:status 500
-       :body "Internal Server Error"})))
+(def http-processor (-> process-request
+                        process-options
+                        check-authorization
+                        validate-method))
 
 (defn- compile-route
   "Takes a string representing a URI and two-element seq whose first element
@@ -42,7 +25,7 @@ map representing a resource. Returns syntax for a compiled route."
        (let [~uri (:uri request#)
              resource# (or ~@(map (partial compile-route uri) routes+resources))]
          (if resource#
-           (run-processors resource# request#)
+           (http-processor request# resource#)
            {:status 404 :body "Resource Not Found"})))))
 
 (defmacro app
@@ -65,6 +48,6 @@ map should be a valid hottop resource map."
                        (when (= uri "/goodbye")
                          goodbye-resource-map))]
       (if resource
-        (run-processors resource request)
+        (http-processor request resource)
         {:status 404 :body "Resource Not Found"})))
   )
