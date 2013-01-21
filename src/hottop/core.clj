@@ -15,7 +15,7 @@ map representing a resource. Returns syntax for a compiled route."
   `(when (= ~uri ~route)
      ~resource))
 
-(defn app*
+(defn routes*
   [& forms]
   (when (not (= (mod (count forms) 2) 0))
     (throw (IllegalArgumentException. "Must provide an even number of arguments.")))
@@ -28,17 +28,17 @@ map representing a resource. Returns syntax for a compiled route."
            (http-processor request# resource#)
            {:status 404 :body "Resource Not Found"})))))
 
-(defmacro app
+(defmacro routes
   "Takes an unlimited number of pairs containing a vector and a map. Currently,
 the vector should contain a single string representing the URI to route to. The
 map should be a valid hottop resource map."
   [& forms]
-  (apply app* forms))
+  (apply routes* forms))
 
 (comment
   ;; for this version this . . .
-  (app ["/hello"] hello-resource-map
-       ["/goodbye"] goodbye-resource-map)
+  (routes ["/hello"] hello-resource-map
+          ["/goodbye"] goodbye-resource-map)
 
   ;; should become something like . . .
   (fn [request]
