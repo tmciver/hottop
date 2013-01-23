@@ -73,4 +73,6 @@ request. Look into fixing this."
                      result)]
         (if (nil? result)
           {:status 500 :body "Internal Server Error"}
-          {:status 200 :body result})))))
+          (if (= method :get)
+            {:status 200 :body result}
+            result))))))
