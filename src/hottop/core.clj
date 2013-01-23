@@ -7,26 +7,25 @@
                         check-authorization
                         validate-method))
 
-(defn- compile-route
+(defn- compile-resource-handler
   "Takes a string representing a URI and two-element seq whose first element
 is vector containing a string representing a route and whose second element is a
 map representing a resource. Returns syntax for a compiled route."
-  [uri [[route] resource]]
-  `(when (= ~uri ~route)
-     ~resource))
+  [request [[route] resource]]
+  `(when-let [params# (clout/route-matches ~route ~request)]
+     (let [request# (merge-with merge ~request {:route-params params#, :params params#})]
+       (http-processor request# ~resource))))
 
 (defn routes*
   [& forms]
   (when (not (= (mod (count forms) 2) 0))
     (throw (IllegalArgumentException. "Must provide an even number of arguments.")))
   (let [routes+resources (partition 2 forms)
-        uri (gensym "uri")]
-    `(fn [request#]
-       (let [~uri (:uri request#)
-             resource# (or ~@(map (partial compile-route uri) routes+resources))]
-         (if resource#
-           (http-processor request# resource#)
-           {:status 404 :body "Resource Not Found"})))))
+        request (gensym "request")]
+    `(fn [~request]
+       (if-let [response# (or ~@(map (partial compile-resource-handler request) routes+resources))]
+         response#
+         {:status 404 :body "Resource Not Found"}))))
 
 (defmacro routes
   "Takes an unlimited number of pairs containing a vector and a map. Currently,
@@ -42,12 +41,12 @@ map should be a valid hottop resource map."
 
   ;; should become something like . . .
   (fn [request]
-    (let [uri (:uri request)
-          resource (or (when (= uri "/hello")
-                         hello-resource-map)
-                       (when (= uri "/goodbye")
-                         goodbye-resource-map))]
-      (if resource
-        (http-processor request resource)
-        {:status 404 :body "Resource Not Found"})))
+    (if-let [response (or (when-let [params (clout/route-matches "/hello" request)]
+                            (let [request (merge-with merge request {:route-params params, :params params})]
+                              (http-processor request hello-resource-map)))
+                          (when-let [params (clout/route-matches "/goodbye" request)]
+                            (let [request (merge-with merge request {:route-params params, :params params})]
+                              (http-processor request goodbye-resource-map))))]
+      response
+      {:status 404 :body "Resource Not Found"}))
   )
