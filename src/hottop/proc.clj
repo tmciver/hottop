@@ -1,7 +1,8 @@
 (ns hottop.proc
   (:require [clojure.string :as str]
             [clojure.set :as set]
-            [hottop.util :as util]))
+            [hottop.util :as util]
+            [ring.util.response :as ring]))
 
 ;; The public functions in this namespace are modelled after Ring middleware in
 ;; that they are functions that take a handler as argument and return a
@@ -76,3 +77,40 @@ request. Look into fixing this."
           (if (= method :get)
             {:status 200 :body result}
             result))))))
+
+(defn process-get
+  "Returns a hottop handler function to appropriately deal with a GET request.
+Will optimally return the formatted response but could also return a 406 'Not
+Acceptable' if the resource is unable to supply a content type listed among
+those in the 'Accept' header, or a 500 'Internal Server Error' if there was no
+'content-types-provided' function for the optimal content type.
+
+Note: this should be changed so that it uses a 'content-types-provided' function
+that could be placed into the resource map by a previous function and only
+attempt to calculate the optimal content type to use if said function has not
+been used."
+  [handler]
+  (fn [request resource]
+    (let [method (:request-method request)]
+      (if (= method :get)
+        (if-let [ct-desired (util/optimal-media-type request resource)]
+          (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
+            (let [get-fn (get-in resource [:methods method])
+                  result (ct-fn (get-fn request))]
+              {:status 200 :body result})
+            {:status 500 :body "Internal Server Error"})
+          {:status 406 :body "Not Acceptable"})
+        (handler request resource)))))
+
+(defn process-post
+  "Returns a hottop handler function to appropriately deal with a POST request."
+  [handler]
+  (fn [request resource]
+    (let [method (:request-method request)]
+      (if (= method :post)
+        (let [post-fn (get-in resource [:methods method])]
+          (post-fn request)
+          (if-let [redirect-uri (:redirect-after-html-post resource)]
+            (ring/redirect-after-post redirect-uri)
+            {:status 200 :body ""}))
+        (handler request resource)))))

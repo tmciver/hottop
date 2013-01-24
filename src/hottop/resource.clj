@@ -31,6 +31,7 @@
                     :content-types-accepted {"application/x-www-form-urlencoded" 'some-fn-to-parse-like-from-Ring}
                     :auth (constantly true)
                     :languages-provided #{"en" "en-us"}
+                    :redirect-after-html-post nil
                     :methods {}})
 
 (defn create-readonly-html-resource
