@@ -39,4 +39,18 @@
           response1 ((check-authorization (constantly :handler1)) request resource1)
           response2 ((check-authorization identity) request resource2)]
       (is (= response1 :handler1))
-      (is (= 401 (:status response2))))))
+      (is (= 401 (:status response2)))))
+
+  (testing "Process GET"
+    (let [request1 (-> (request :get "/test")
+                       (header "Accept" "text/html"))
+          request2 (request :post "/test")
+          request3 (-> (request :get "/test")
+                       (header "Accept" "text/plain"))
+          resource (create-readonly-html-resource (constantly "Hello!") identity)
+          response1 ((process-get (constantly :handler1)) request1 resource)
+          response2 ((process-get (constantly :handler2)) request2 resource)
+          response3 ((process-get (constantly :handler3)) request3 resource)]
+      (is (= response1 {:status 200 :body "Hello!"}))
+      (is (= response2 :handler2))
+      (is (= response3 {:status 406 :body "Not Acceptable"})))))

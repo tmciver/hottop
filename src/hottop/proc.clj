@@ -1,6 +1,7 @@
 (ns hottop.proc
   (:require [clojure.string :as str]
             [clojure.set :as set]
+            [clojure.string :as str]
             [hottop.util :as util]
             [ring.util.response :as ring]))
 
@@ -78,7 +79,23 @@ request. Look into fixing this."
             {:status 200 :body result}
             result))))))
 
-(defn process-get
+(defmacro ^:private defmethodprocessor
+  [proc-name & body]
+  (let [[process method-str] (str/split (str proc-name) #"-")
+        method (keyword method-str)]
+    (when (not (and (= process "process")
+                    (#{:get :head :put :post :delete} method)))
+      (throw (IllegalArgumentException. "processor name must be of the form
+\"process-<http-method>\".")))
+    `(defn ~proc-name
+       [~'handler]
+       (fn ~['request 'resource]
+         (let [method# (:request-method ~'request)]
+           (if (= method# ~method)
+             ~@body
+             (~'handler ~'request ~'resource)))))))
+
+#_(defn process-get
   "Returns a hottop handler function to appropriately deal with a GET request.
 Will optimally return the formatted response but could also return a 406 'Not
 Acceptable' if the resource is unable to supply a content type listed among
@@ -101,6 +118,16 @@ been used."
             {:status 500 :body "Internal Server Error"})
           {:status 406 :body "Not Acceptable"})
         (handler request resource)))))
+
+(defmethodprocessor process-get
+  (if-let [ct-desired (util/optimal-media-type request resource)]
+    (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
+      (let [method (:request-method request)
+            get-fn (get-in resource [:methods method])
+            result (ct-fn (get-fn request))]
+        {:status 200 :body result})
+      {:status 500 :body "Internal Server Error"})
+    {:status 406 :body "Not Acceptable"}))
 
 (defn process-post
   "Returns a hottop handler function to appropriately deal with a POST request."
