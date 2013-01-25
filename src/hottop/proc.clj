@@ -80,7 +80,10 @@ request. Look into fixing this."
             result))))))
 
 (defmacro ^:private defmethodprocessor
-  [proc-name & body]
+  "A macro used to remove boiler plate from the HTTP method-processing
+functions. Note that the following symbols are available for use in the body of
+the macro: handler, request, resource."
+  [proc-name doc & body]
   (let [[process method-str] (str/split (str proc-name) #"-")
         method (keyword method-str)]
     (when (not (and (= process "process")
@@ -88,6 +91,7 @@ request. Look into fixing this."
       (throw (IllegalArgumentException. "processor name must be of the form
 \"process-<http-method>\".")))
     `(defn ~proc-name
+       ~doc
        [~'handler]
        (fn ~['request 'resource]
          (let [method# (:request-method ~'request)]
@@ -95,31 +99,17 @@ request. Look into fixing this."
              ~@body
              (~'handler ~'request ~'resource)))))))
 
-#_(defn process-get
-  "Returns a hottop handler function to appropriately deal with a GET request.
-Will optimally return the formatted response but could also return a 406 'Not
-Acceptable' if the resource is unable to supply a content type listed among
-those in the 'Accept' header, or a 500 'Internal Server Error' if there was no
-'content-types-provided' function for the optimal content type.
+(defmethodprocessor process-get
+  "Creates a defn that returns a hottop handler function to appropriately deal
+with a GET request. Will optimally return the formatted response but could also
+return a 406 'Not Acceptable' if the resource is unable to supply a content type
+listed among those in the 'Accept' header, or a 500 'Internal Server Error' if
+there was no 'content-types-provided' function for the optimal content type.
 
 Note: this should be changed so that it uses a 'content-types-provided' function
 that could be placed into the resource map by a previous function and only
 attempt to calculate the optimal content type to use if said function has not
 been used."
-  [handler]
-  (fn [request resource]
-    (let [method (:request-method request)]
-      (if (= method :get)
-        (if-let [ct-desired (util/optimal-media-type request resource)]
-          (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
-            (let [get-fn (get-in resource [:methods method])
-                  result (ct-fn (get-fn request))]
-              {:status 200 :body result})
-            {:status 500 :body "Internal Server Error"})
-          {:status 406 :body "Not Acceptable"})
-        (handler request resource)))))
-
-(defmethodprocessor process-get
   (if-let [ct-desired (util/optimal-media-type request resource)]
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
       (let [method (:request-method request)
