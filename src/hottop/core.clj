@@ -2,7 +2,9 @@
   (:use hottop.proc)
   (:require [clout.core :as clout]))
 
-(def http-processor (-> process-request
+(def http-processor (-> (constantly {:status 500 :body "Internal Server Error"})
+                        process-post
+                        process-get
                         process-options
                         check-authorization
                         validate-method))

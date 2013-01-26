@@ -56,29 +56,6 @@ request. Look into fixing this."
       {:status 200 :headers {"Allow" (util/allow-header-str resource)}}
       (handler request resource))))
 
-(defn process-request
-  [request resource]
-  (let [method (:request-method request)
-        f (get-in resource [:methods method])
-        ct-desired (util/optimal-media-type request resource)]
-    (if (and (= method :get) (not ct-desired))
-      ;; the client requested a resource without an acceptable content type
-      {:status 406 :body "Not Acceptable"}
-      (let [result (f request)
-            result (if (= method :get)
-                     ;; transform the data from get using the optimal content-
-                     ;; types-provided function
-                     (if-let [ct-fn (get-in resource
-                                            [:content-types-provided ct-desired])]
-                       (ct-fn result)
-                       {:status 500 :body "Internal Server Error"})
-                     result)]
-        (if (nil? result)
-          {:status 500 :body "Internal Server Error"}
-          (if (= method :get)
-            {:status 200 :body result}
-            result))))))
-
 (defmacro ^:private defmethodprocessor
   "A macro used to remove boiler plate from the HTTP method-processing
 functions. Note that the following symbols are available for use in the body of
