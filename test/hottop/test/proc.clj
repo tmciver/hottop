@@ -53,4 +53,20 @@
           response3 ((process-get (constantly :handler3)) request3 resource)]
       (is (= response1 {:status 200 :body "Hello!"}))
       (is (= response2 :handler2))
-      (is (= response3 {:status 406 :body "Not Acceptable"})))))
+      (is (= response3 {:status 406 :body "Not Acceptable"}))))
+
+  (testing "Process POST"
+    (let [request1 (-> (request :post "/test")
+                       (header "Accept" "text/html"))
+          request2 (-> (request :post "/test")
+                       (header "Accept" "text/plain"))
+          resource (-> base-resource
+                       (assoc-in [:methods :post] (constantly :do-nothing))
+                       (assoc :redirect-after-html-post "/foo")
+                       (assoc-in [:content-types-provided "text/html"] identity)
+                       (assoc-in [:content-types-provided "text/plain"] identity))
+          response1 ((process-post (constantly :handler1)) request1 resource)
+          response2 ((process-post (constantly :handler2)) request2 resource)]
+      (is (and (= (:status response1) 303)
+               (= (get-in response1 [:headers "Location"]) "/foo")))
+      (is (= response2 {:status 200 :body ""})))))

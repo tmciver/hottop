@@ -112,22 +112,24 @@ attempt to calculate the optimal content type to use if said function has not
 been used."
   (if-let [ct-desired (util/optimal-media-type request resource)]
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
-      (let [method (:request-method request)
-            get-fn (get-in resource [:methods method])
+      (let [get-fn (get-in resource [:methods :get])
             result (ct-fn (get-fn request))]
         {:status 200 :body result})
       {:status 500 :body "Internal Server Error"})
     {:status 406 :body "Not Acceptable"}))
 
-(defn process-post
-  "Returns a hottop handler function to appropriately deal with a POST request."
-  [handler]
-  (fn [request resource]
-    (let [method (:request-method request)]
-      (if (= method :post)
-        (let [post-fn (get-in resource [:methods method])]
-          (post-fn request)
-          (if-let [redirect-uri (:redirect-after-html-post resource)]
-            (ring/redirect-after-post redirect-uri)
-            {:status 200 :body ""}))
-        (handler request resource)))))
+(defmethodprocessor process-post
+  "Creates a defn that returns a hottop handler function to appropriately deal
+with a POST request. Note that the normal response to a POST request is a '200'
+but this function will respond with a redirect under the following circumstances:
+1. the :redirect-after-html-post key in the resource is non-nil and 2. the media
+type returned by util/optimal-media-type is one of 'text/html' or
+'application/xhtml+xml'. This is to give the right behavior when the client is a
+web browser."
+  (let [post-fn (get-in resource [:methods :post])]
+    (post-fn request)
+    (let [redirect-uri (:redirect-after-html-post resource)]
+      (if (and redirect-uri
+               (#{"text/html" "application/xhtml+xml"} (util/optimal-media-type request resource)))
+        (ring/redirect-after-post redirect-uri)
+        {:status 200 :body ""}))))
