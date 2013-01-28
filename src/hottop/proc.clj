@@ -3,6 +3,7 @@
             [clojure.set :as set]
             [clojure.string :as str]
             [hottop.util :as util]
+            [hottop.response :as response]
             [ring.util.response :as ring]))
 
 ;; The public functions in this namespace are modelled after Ring middleware in
@@ -29,7 +30,7 @@ resource arguments."
           available-methods (set (keys (:methods resource)))]
       (if (available-methods request-method)
         (handler request resource)
-        {:status 405 :body "Method Not Allowed"}))))
+        (response/code 405)))))
 
 (defn ^{:webmachine-node :b8} check-authorization
   "If the result of calling the function associated with the :auth key in the
@@ -41,7 +42,7 @@ and resource arguments."
     (let [auth-fn (:auth resource)]
       (if (auth-fn request)
         (handler request resource)
-        {:status 401 :body "Unauthorized"}))))
+        (response/code 401)))))
 
 (defn ^{:webmachine-node :b3} process-options
   "If the request method is OPTIONS, creates a response whose :status is 200 and
@@ -91,9 +92,9 @@ been used."
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
       (let [get-fn (get-in resource [:methods :get])
             result (ct-fn (get-fn request))]
-        {:status 200 :body result})
-      {:status 500 :body "Internal Server Error"})
-    {:status 406 :body "Not Acceptable"}))
+        (ring/response result))
+      (response/code 500))
+    (response/code 406)))
 
 (defmethodprocessor process-post
   "Creates a defn that returns a hottop handler function to appropriately deal
@@ -109,4 +110,4 @@ web browser."
       (if (and redirect-uri
                (#{"text/html" "application/xhtml+xml"} (util/optimal-media-type request resource)))
         (ring/redirect-after-post redirect-uri)
-        {:status 200 :body ""}))))
+        (response/code 200)))))

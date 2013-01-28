@@ -1,8 +1,9 @@
 (ns hottop.core
   (:use hottop.proc)
-  (:require [clout.core :as clout]))
+  (:require [clout.core :as clout]
+            [hottop.response :as response]))
 
-(def http-processor (-> (constantly {:status 500 :body "Internal Server Error"})
+(def http-processor (-> (constantly (response/code 500))
                         process-post
                         process-get
                         process-options
@@ -27,7 +28,7 @@ map representing a resource. Returns syntax for a compiled route."
     `(fn [~request]
        (if-let [response# (or ~@(map (partial compile-resource-handler request) routes+resources))]
          response#
-         {:status 404 :body "Resource Not Found"}))))
+         (response/code 404)))))
 
 (defmacro routes
   "Takes an unlimited number of pairs containing a vector and a map. Currently,
