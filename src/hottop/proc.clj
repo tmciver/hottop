@@ -27,7 +27,10 @@ resource arguments."
   [handler]
   (fn [request resource]
     (let [request-method (:request-method request)
-          available-methods (set (keys (:methods resource)))]
+          available-methods (-> (:methods resource)
+                                keys
+                                (conj :options)
+                                set)]
       (if (available-methods request-method)
         (handler request resource)
         (response/code 405)))))
