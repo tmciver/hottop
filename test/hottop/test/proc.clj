@@ -3,7 +3,9 @@
         hottop.resource
         clojure.test
         ring.mock.request)
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [ring.util.response :as ring]
+            [hottop.response :as response]))
 
 (deftest test-http-processors
 
@@ -51,9 +53,9 @@
           response1 ((process-get (constantly :handler1)) request1 resource)
           response2 ((process-get (constantly :handler2)) request2 resource)
           response3 ((process-get (constantly :handler3)) request3 resource)]
-      (is (= response1 {:status 200 :body "Hello!"}))
+      (is (= response1 (ring/response "Hello!")))
       (is (= response2 :handler2))
-      (is (= response3 {:status 406 :body "Not Acceptable"}))))
+      (is (= response3 (response/code 406)))))
 
   (testing "Process POST"
     (let [request1 (-> (request :post "/test")
@@ -69,4 +71,4 @@
           response2 ((process-post (constantly :handler2)) request2 resource)]
       (is (and (= (:status response1) 303)
                (= (get-in response1 [:headers "Location"]) "/foo")))
-      (is (= response2 {:status 200 :body ""})))))
+      (is (= response2 (response/code 200))))))
