@@ -45,6 +45,15 @@
        (interpose ", ")
        (apply str)))
 
+(defn accepts-html?
+  "Returns truthy if the request indicates that it will accept a response in
+HTML format (the Accept header contains one or both of 'text/html' or
+'application/xhtml+xml'), falsey otherwise."
+  [request]
+  (when-let [{{accept-str "accept"} :headers} request]
+    (let [accept-types (map :type (parse-accept-header accept-str))]
+          (some #{"text/html" "application/xhtml+xml"} accept-types))))
+
 (defn ^{:webmachine-node :c4} optimal-media-type
   "Returns a string representing the optimal client-requested media type or nil
 if there isn't one.  See RFC 2046 (http://tools.ietf.org/html/rfc2046) or

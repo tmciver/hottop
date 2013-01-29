@@ -110,7 +110,6 @@ web browser."
   (let [post-fn (get-in resource [:methods :post])]
     (post-fn request)
     (let [redirect-uri (:redirect-after-html-post resource)]
-      (if (and redirect-uri
-               (#{"text/html" "application/xhtml+xml"} (util/optimal-media-type request resource)))
+      (if (and redirect-uri (util/accepts-html? request))
         (ring/redirect-after-post redirect-uri)
         (response/code 200)))))
