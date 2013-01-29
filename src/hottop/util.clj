@@ -72,3 +72,10 @@ http://en.wikipedia.org/wiki/MIME_type for examples of media type strings.
                   first
                   :type)]
     type))
+
+(defn response?
+  "Returns truthy if argument is a map that contains the key :status, false
+otherwise."
+  [data]
+  (and (map? data)
+       (some #{:status} (keys data))))

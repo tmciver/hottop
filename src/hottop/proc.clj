@@ -107,9 +107,11 @@ but this function will respond with a redirect under the following circumstances
 type returned by util/optimal-media-type is one of 'text/html' or
 'application/xhtml+xml'. This is to give the right behavior when the client is a
 web browser."
-  (let [post-fn (get-in resource [:methods :post])]
-    (post-fn request)
-    (let [redirect-uri (:redirect-after-html-post resource)]
-      (if (and redirect-uri (util/accepts-html? request))
-        (ring/redirect-after-post redirect-uri)
-        (response/code 200)))))
+  (let [post-fn (get-in resource [:methods :post])
+        result (post-fn request)]
+    (if (util/response? result)
+      result
+      (let [redirect-uri (:redirect-after-html-post resource)]
+        (if (and redirect-uri (util/accepts-html? request))
+          (ring/redirect-after-post redirect-uri)
+          (response/code 200))))))
