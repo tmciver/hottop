@@ -64,7 +64,7 @@
                        (header "Accept" "text/plain"))
           resource (-> base-resource
                        (assoc-in [:methods :post] (constantly :do-nothing))
-                       (assoc :redirect-after-html-post "/foo")
+                       (assoc :redirect-after-html-post (constantly "/foo"))
                        (assoc-in [:content-types-provided "text/html"] identity)
                        (assoc-in [:content-types-provided "text/plain"] identity))
           response1 ((process-post (constantly :handler1)) request1 resource)
