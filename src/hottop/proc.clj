@@ -111,7 +111,7 @@ web browser."
         result (post-fn request)]
     (if (util/response? result)
       result
-      (let [redirect-uri (:redirect-after-html-post resource)]
+      (let [redirect-uri ((:redirect-after-html-post resource) request)]
         (if (and redirect-uri (util/accepts-html? request))
           (ring/redirect-after-post redirect-uri)
           (response/code 200))))))
