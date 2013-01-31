@@ -32,8 +32,13 @@
                        (header "Accept" "text/html"))
           request2 (-> (request :get "/test")
                        (header "Accept" "text/csv"))
-          resource (create-readonly-html-resource (constantly "hello!"))
-          omt1 (optimal-media-type request1 resource)
-          omt2 (optimal-media-type request2 resource)]
+          resource1 (create-readonly-html-resource (constantly "hello!"))
+          resource2 (-> base-resource
+                        (assoc-in [:methods :get] (constantly "hello."))
+                        (assoc-in [:content-types-provided "text/csv"] identity))
+          omt1 (optimal-media-type request1 resource1)
+          omt2 (optimal-media-type request2 resource1)
+          omt3 (optimal-media-type request2 resource2)]
       (is (= omt1 "text/html"))
-      (is (nil? omt2)))))
+      (is (nil? omt2))
+      (is (= omt3 "text/csv")))))
