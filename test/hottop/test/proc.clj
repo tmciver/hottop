@@ -43,6 +43,22 @@
       (is (= response1 :handler1))
       (is (= 401 (:status response2)))))
 
+  (testing "Test Validate Accept"
+    (let [request1 (-> (request :get "/test")
+                       (header "Accept" "text/html"))
+          request2 (-> (request :get "/test")
+                       (header "Accept" "text/csv"))
+          resource1 (create-readonly-html-resource (constantly "hello!"))
+          resource2 (-> base-resource
+                        (assoc-in [:methods :get] (constantly "hello."))
+                        (assoc-in [:content-types-provided "text/csv"] identity))
+          response1 ((validate-accept (fn [r _] r)) request1 resource1)
+          response2 ((validate-accept (constantly :handler2)) request2 resource1)
+          response3 ((validate-accept (fn [r _] r)) request2 resource2)]
+      (is (= (:optimal-ct response1) "text/html"))
+      (is (= response2 (response/code 406)))
+      (is (= (:optimal-ct response3) "text/csv"))))
+
   (testing "Process GET"
     (let [request1 (-> (request :get "/test")
                        (header "Accept" "text/html"))

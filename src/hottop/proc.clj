@@ -1,7 +1,6 @@
 (ns hottop.proc
   (:require [clojure.string :as str]
             [clojure.set :as set]
-            [clojure.string :as str]
             [hottop.util :as util]
             [hottop.response :as response]
             [ring.util.response :as ring]))
@@ -47,6 +46,19 @@ and resource arguments."
         (handler request resource)
         (response/code 401)))))
 
+(defn ^{:webmachine-node :c4} validate-accept
+  "Returns a hottop handler function that checks if the resource provides a
+content type acceptable to the client. This handler function returns a 406
+response if the resource does not provide one, otherwise the passed-in handler
+is called with the request and resource as arguments."
+  [handler]
+  (fn [request resource]
+    (if (get-in request [:headers "accept"])
+      (if-let [optimal-ct (util/optimal-media-type request resource)]
+        (handler (assoc request :optimal-ct optimal-ct) resource)
+        (response/code 406))
+      (handler request resource))))
+
 (defn ^{:webmachine-node :b3} process-options
   "If the request method is OPTIONS, creates a response whose :status is 200 and
   whose \"Allow\" header is a string of comma-separated, upper-case HTTP
@@ -91,7 +103,8 @@ Note: this should be changed so that it uses a 'content-types-provided' function
 that could be placed into the resource map by a previous function and only
 attempt to calculate the optimal content type to use if said function has not
 been used."
-  (if-let [ct-desired (util/optimal-media-type request resource)]
+  (if-let [ct-desired (or (:optimal-ct request)   ;; put in place by 'validate-accept'
+                          (util/optimal-media-type request resource))]
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
       (let [get-fn (get-in resource [:methods :get])
             result (ct-fn (get-fn request))]
