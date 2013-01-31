@@ -40,6 +40,7 @@
                     :redirect-after-html-post (constantly nil)
                     :methods {}})
 
+;; NOTE: rename to 'readonly-html' for next version bump
 (defn create-readonly-html-resource
   "Returns a resource that will only respond to a GET request. get-fn should be
 a function of the ring request. html-fn should be a function of one argument (it
@@ -51,3 +52,14 @@ pass in a single function that takes the ring request and returns HTML directly.
          (assoc-in [:content-types-provided "text/html"] html-fn)))
   ([get-html-fn]
      (create-readonly-html-resource get-html-fn identity)))
+
+(defn add-method-handler
+  "Adds handler to resource for the given HTTP method."
+  [resource method handler]
+  (assoc-in resource [:methods method] handler))
+
+(defn add-view
+  "Adds view-function to the :content-types-provided map for the key given by
+content-type"
+  [resource content-type view-function]
+  (assoc-in resource [:content-types-provided content-type] view-function))
