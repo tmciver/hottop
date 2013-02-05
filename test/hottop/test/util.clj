@@ -45,9 +45,9 @@
 
 (deftest test-allow-header-str
   (let [resource (-> base-resource
-                     (assoc-in [:methods :get] (constantly "Hello!"))
-                     (assoc-in [:methods :post] (constantly "Hello!"))
-                     (assoc-in [:methods :put] (constantly "Hello!")))]
+                     (add-method-handler :get (constantly "Hello!"))
+                     (add-method-handler :post (constantly "Hello!"))
+                     (add-method-handler :put (constantly "Hello!")))]
     (is (= (allow-header-str resource)
            "PUT, POST, GET"))))
 
@@ -64,15 +64,6 @@
     (is (not (accepts-html? req2)))
     (is (accepts-html? req3))
     (is (not (accepts-html? req4)))))
-
-(deftest test-types-and-subtypes
-  (let [res (-> base-resource
-                (add-view "text/html" identity)
-                (add-view "text/csv" identity)
-                (add-view "application/json" identity))]
-    (is (= (#'hottop.util/types-and-subtypes res)
-           {"text" #{"html" "csv"}
-            "application" #{"json"}}))))
 
 (deftest test-at-accepts-pt?
   (let [pts1 [{:type "text" :subtype "html"}
@@ -102,8 +93,8 @@
                        (header "Accept" "image/jpeg;q=0, image/*"))
           resource1 (create-readonly-html-resource (constantly "hello!"))
           resource2 (-> base-resource
-                        (assoc-in [:methods :get] (constantly "hello."))
-                        (assoc-in [:content-types-provided "text/csv"] identity))
+                        (add-method-handler :get (constantly "hello."))
+                        (add-view "text/csv" identity))
           resource3 (-> base-resource
                         (add-view "image/jpeg" identity)
                         (add-view "image/png" identity))

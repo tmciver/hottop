@@ -59,8 +59,7 @@
        keys
        (map name)
        (map str/upper-case)
-       (interpose ", ")
-       (apply str)))
+       (str/join ", ")))
 
 (defn accepts-html?
   "Returns truthy if the request indicates that it will accept a response in
@@ -70,35 +69,6 @@ HTML format (the Accept header contains one or both of 'text/html' or
   (when-let [{{accept-str "accept"} :headers} request]
     (let [accept-types (map type-map-to-content-str (parse-accept-header accept-str))]
           (some #{"text/html" "application/xhtml+xml"} accept-types))))
-
-(defn- types-and-subtypes
-  "Returns a map of content type (major) to set of content subtypes for the
-given resource. For example, if the resource provides the following three
-content types: 'text/html', 'text/csv' and 'application/json', then the returned
-map will be:
- {'text' #{'html' 'csv'}
-  'application' #{'json'}}"
-  [resource]
-  (->> (:content-types-provided resource)
-       keys
-       (map #(str/split % #"/"))
-       (group-by first)
-       (map (fn [[type subtypes]]
-              [type (reduce (fn [res subtype]
-                              (conj res (second subtype)))
-                            #{} subtypes)]))
-       (into {})))
-
-(defn- types-and-subtypes2
-  "Returns a map of content type to set of content subtypes when given a
-collection of maps each with keys :type and :subtype."
-  [type-maps]
-  (->> (group-by :type type-maps)
-       (map (fn [[type typemaps]]
-              [type (reduce (fn [res typemap]
-                              (conj res (:subtype typemap)))
-                            #{} typemaps)]))
-       (into {})))
 
 (defn- at-accepts-pt?
   "Returns true if provided-type map (pt) is acceptable when compared to the
@@ -155,46 +125,6 @@ http://en.wikipedia.org/wiki/MIME_type for examples of media type strings."
            (sort-by :q >)
            first
            type-map-to-content-str))))
-
-#_(defn ^{:webmachine-node :c4} optimal-media-type
-    "Returns a string representing the optimal client-requested media type or nil
-if there isn't one.  See RFC 2046 (http://tools.ietf.org/html/rfc2046) or
-http://en.wikipedia.org/wiki/MIME_type for examples of media type strings.
-
-  WARNING! This function is broken. Specifically, type/* media types in
-  the Accept header are not handled."
-  [request resource]
-  (let [ ;;types-subtypes (types-and-subtypes resource)
-        accept-maps (doto (->> (parse-accept-header (get-in request [:headers "accept"]))
-                               (sort-by :q >)) prn)
-        provided-maps (doto (provided-maps resource) prn)
-        ;; returns true if provided type map (pt) is acceptable when compared to
-        ;; to the given accepted type map (at)
-        acceptable? (fn [pt at] (and (not= (:q at) 0.0)
-                                     (or (= (:type at) "*")
-                                         (and (= (:type at) (:type pt))
-                                              (or (= (:subtype at) "*")
-                                                  (= (:subtype at) (:subtype pt)))))))
-        acceptable-type? (fn [t] )
-        ;; filter out the provided maps that match an accept-map with a quality
-        ;; factor of zero
-        acceptable-maps (doto (filter (fn [pm]
-                                        (some (partial acceptable? pm)
-                                              accept-maps)) provided-maps) prn)
-        types-subtypes (doto (types-and-subtypes2  acceptable-maps) prn)
-        choose-type (fn [accepted-type provided-types]
-                      (if (= accepted-type "*")
-                        (rand-nth (seq provided-types))
-                        (some #{accepted-type} provided-types)))
-        type (some (fn [{:keys [type subtype]}]
-                     (let [provided-types (keys types-subtypes)
-                           atype (choose-type type provided-types)
-                           provided-subtypes (types-subtypes atype)
-                           asubtype (choose-type subtype provided-subtypes)]
-                       (when (and atype asubtype)
-                         (str/join "/" [atype asubtype]))))
-                   accept-maps)]
-    type))
 
 (defn response?
   "Returns truthy if argument is a map that contains the key :status, false
