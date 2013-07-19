@@ -1,6 +1,9 @@
 (ns hottop.middleware
   (:require [clojure.string :as str]))
 
+;; See https://github.com/ring-clojure/ring/blob/master/ring-core/src/ring/util/mime_type.clj
+;; to remove duplication of this code.
+
 (declare known-ct)
 
 (defn wrap-accept-from-extension
