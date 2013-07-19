@@ -108,8 +108,10 @@ been used."
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
       (let [get-fn (get-in resource [:methods :get])
             result (ct-fn (get-fn request))]
-        (-> (ring/response result)
-            (ring/header "content-type" ct-desired)))
+        (if (util/response? result)
+          result
+          (-> (ring/response result)
+              (ring/header "content-type" ct-desired))))
       (response/code 500))
     (response/code 406)))
 
