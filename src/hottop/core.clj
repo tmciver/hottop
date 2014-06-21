@@ -3,12 +3,19 @@
   (:require [clout.core :as clout]
             [hottop.response :as response]))
 
-(def http-processor (-> (constantly (response/code 500))
-                        process-post
-                        process-get
-                        process-options
+(defmacro <-
+  "Applies -> to the given forms in reverse. This facilitates building a
+sequence of Ring-like handler functions as the functions will be executed in the
+order given."
+  [& forms]
+  `(-> ~@(reverse forms)))
+
+(def http-processor (<- validate-method
                         check-authorization
-                        validate-method))
+                        process-options
+                        process-get
+                        process-post
+                        (constantly (response/code 500))))
 
 (defn- compile-resource-handler
   "Takes a string representing a URI and two-element seq whose first element
