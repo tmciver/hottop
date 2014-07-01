@@ -59,51 +59,13 @@ is called with the request and resource as arguments."
         (response/code 406))
       (handler request resource))))
 
-(defn ^{:webmachine-node :b3} process-options
-  "If the request method is OPTIONS, creates a response whose :status is 200 and
-  whose \"Allow\" header is a string of comma-separated, upper-case HTTP
-  methods supported by this resource.
+(defmulti process-request*
+  "Processes the HTTP request as a function of the request method."
+  (fn [request resource] (:request-method request)))
 
-NOTE: it looks like the servlet used by ring/jetty intercepts an OPTIONS
-request. Look into fixing this."
-  [handler]
-  (fn [request resource]
-    (if (= (:request-method request) :options)
-      {:status 200 :headers {"Allow" (util/allow-header-str resource)}}
-      (handler request resource))))
-
-(defmacro ^:private defmethodprocessor
-  "A macro used to remove boiler plate from the HTTP method-processing
-functions. Note that the following symbols are available for use in the body of
-the macro: handler, request, resource."
-  [proc-name doc & body]
-  (let [[process method-str] (str/split (str proc-name) #"-")
-        method (keyword method-str)]
-    (when (not (and (= process "process")
-                    (#{:get :head :put :post :delete} method)))
-      (throw (IllegalArgumentException. "processor name must be of the form
-\"process-<http-method>\".")))
-    `(defn ~proc-name
-       ~doc
-       [~'handler]
-       (fn ~['request 'resource]
-         (let [method# (:request-method ~'request)]
-           (if (= method# ~method)
-             ~@body
-             (~'handler ~'request ~'resource)))))))
-
-(defmethodprocessor process-get
-  "Creates a defn that returns a hottop handler function to appropriately deal
-with a GET request. Will optimally return the formatted response but could also
-return a 406 'Not Acceptable' if the resource is unable to supply a content type
-listed among those in the 'Accept' header, or a 500 'Internal Server Error' if
-there was no 'content-types-provided' function for the optimal content type.
-
-Note: this should be changed so that it uses a 'content-types-provided' function
-that could be placed into the resource map by a previous function and only
-attempt to calculate the optimal content type to use if said function has not
-been used."
-  (if-let [ct-desired (or (:optimal-ct request)   ;; put in place by 'validate-accept'
+(defmethod process-request* :get
+  [request resource]
+  (if-let [ct-desired (or (:optimal-ct request) ;; put in place by 'validate-accept'
                           (util/optimal-media-type request resource))]
     (if-let [ct-fn (get-in resource [:content-types-provided ct-desired])]
       (let [get-fn (get-in resource [:methods :get])
@@ -115,19 +77,35 @@ been used."
       (response/code 500))
     (response/code 406)))
 
-(defmethodprocessor process-post
-  "Creates a defn that returns a hottop handler function to appropriately deal
-with a POST request. Note that the normal response to a POST request is a '200'
-but this function will respond with a redirect under the following circumstances:
-1. the :redirect-after-html-post key in the resource is non-nil and 2. the media
-type returned by util/optimal-media-type is one of 'text/html' or
-'application/xhtml+xml'. This is to give the right behavior when the client is a
-web browser."
-  (let [post-fn (get-in resource [:methods :post])
-        result (post-fn request)]
-    (if (util/response? result)
-      result
-      (let [redirect-uri ((:redirect-after-html-post resource) request)]
-        (if (and redirect-uri (util/accepts-html? request))
-          (ring/redirect-after-post redirect-uri)
-          (response/code 200))))))
+(defmethod process-request* :post
+  [request resource]
+  (if-let [post-fn (get-in resource [:methods :post])]
+    (let [result (post-fn request)]
+      (if (util/response? result)
+        result
+        (let [redirect-uri ((:redirect-after-html-post resource) request)]
+          (if (and redirect-uri (util/accepts-html? request))
+            (ring/redirect-after-post redirect-uri)
+            (response/code 200)))))
+    (response/code 500)))
+
+;; If the request method is OPTIONS, creates a response whose :status is 200 and
+;; whose \"Allow\" header is a string of comma-separated, upper-case HTTP
+;; methods supported by this resource.
+(defmethod process-request* :options
+  [request resource]
+  {:status 200 :headers {"Allow" (util/allow-header-str resource)}})
+
+(defmethod process-request* :default
+  [request resource]
+  (if-let [method-fn (get-in resource [:methods (:request-method request)])]
+    (let [response (method-fn request)]
+      (if (util/response? response)
+        response
+        (response/code 200)))
+    (response/code 500)))
+
+(defn process-request
+  "Processes the request."
+  [request resource]
+  (process-request* request resource))

@@ -15,7 +15,7 @@
                        (assoc-in [:methods :get] (constantly "Hello!"))
                        (assoc-in [:methods :post] (constantly "Hello!"))
                        (assoc-in [:methods :put] (constantly "Hello!")))
-          response ((process-options identity) request resource)
+          response (process-request request resource)
           option-strs (-> response
                           :headers
                           (get "Allow")
@@ -66,17 +66,14 @@
   (testing "Process GET"
     (let [request1 (-> (request :get "/test")
                        (header "Accept" "text/html"))
-          request2 (request :post "/test")
-          request3 (-> (request :get "/test")
+          request2 (-> (request :get "/test")
                        (header "Accept" "text/plain"))
           resource (create-readonly-html-resource (constantly "Hello!") identity)
-          response1 ((process-get (constantly :handler1)) request1 resource)
-          response2 ((process-get (constantly :handler2)) request2 resource)
-          response3 ((process-get (constantly :handler3)) request3 resource)]
+          response1 (process-request request1 resource)
+          response2 (process-request request2 resource)]
       (is (= response1 (-> (ring/response "Hello!")
                            (ring/header "content-type" "text/html"))))
-      (is (= response2 :handler2))
-      (is (= response3 (response/code 406)))))
+      (is (= response2 (response/code 406)))))
 
   (testing "Process POST"
     (let [request1 (-> (request :post "/test")
@@ -88,8 +85,8 @@
                        (assoc :redirect-after-html-post (constantly "/foo"))
                        (assoc-in [:content-types-provided "text/html"] identity)
                        (assoc-in [:content-types-provided "text/plain"] identity))
-          response1 ((process-post (constantly :handler1)) request1 resource)
-          response2 ((process-post (constantly :handler2)) request2 resource)]
+          response1 (process-request request1 resource)
+          response2 (process-request request2 resource)]
       (is (and (= (:status response1) 303)
                (= (get-in response1 [:headers "Location"]) "/foo")))
       (is (= response2 (response/code 200))))))

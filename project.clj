@@ -1,4 +1,4 @@
-(defproject hottop/hottop "0.1.6" 
+(defproject hottop/hottop "0.1.7"
   :min-lein-version "2.0.0"
   :profiles {:dev {:dependencies [[ring-mock "0.1.2"]]}}
   :dependencies [[org.clojure/clojure "1.3.0"]

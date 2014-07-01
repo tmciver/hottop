@@ -12,10 +12,7 @@ order given."
 
 (def http-processor (<- validate-method
                         check-authorization
-                        process-options
-                        process-get
-                        process-post
-                        (constantly (response/code 500))))
+                        process-request))
 
 (defn- compile-resource-handler
   "Takes a string representing a URI and two-element seq whose first element
